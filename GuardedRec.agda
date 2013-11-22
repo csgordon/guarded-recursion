@@ -56,8 +56,13 @@ module GuardedRec where
   
 
 
-  pfix : ∀ {l}{A B : Set l} → ((A → ▸ B) → A → B) → A → B
-  pfix t = gfix (λ y → t (λ y → next (pfix t y)))
+  {- An important subtlety that arises here is that A and B can be in
+     different universe levels, as in the Lam example below, where
+     A : Set 0 and B : Set 1, since we're building a function of
+     type ℕ → Set 0.
+  -}
+  pfix : ∀ {la lb}{A : Set la}{B : Set lb} → ((A → ▸ B) → A → B) → A → B
+  pfix {la}{lb}{A}{B} t = gfix (λ y → t (λ y → next (pfix t y)))
   
   pfix-red : ∀ {l}{A B : Set l} (t : ((A → ▸ B) → A → B)) →
                pfix t ≡ t (λ y → next (pfix t y))
@@ -66,14 +71,7 @@ module GuardedRec where
   -- Lam n example
   F : ∀ {l} → (ℕ → ▸ (Set l)) → ℕ → Set l
   F X n = Fin n ⊎ ((▹ X n) × (▹ X n)) ⊎ (▹ X (Data.Nat._+_ n  1))
-  {- This works, but not how I'd expect.  If the level is provided
-     explicitly to pfix, we're not producing a result in the right
-     universe.  It's possible that the types for the fixpoint params
-     should be free to live in different universes, and this is being
-     done implicitly in the Coq version via typical ambiguity + cumulativity.
-     But the paper doesn't model a universe heirarchy, so these should
-     be the same universe...
-  -}
-  Lam : ∀ {l} → ℕ → Set l
-  Lam {l} n = pfix (λ X n → F (λ z → X (Level.lift z)) (lower n)) (Level.lift n)
+  
+  Lam : ℕ → Set Level.zero
+  Lam n = pfix (λ X n₁ → F X n₁) n
 
