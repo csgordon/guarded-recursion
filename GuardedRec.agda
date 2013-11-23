@@ -63,6 +63,16 @@ module GuardedRec where
   -}
   pfix : ∀ {la lb}{A : Set la}{B : Set lb} → ((A → ▸ B) → A → B) → A → B
   pfix {la}{lb}{A}{B} t = gfix (λ y → t (λ y → next (pfix t y)))
+  {- The Coq version is actually:
+  --pfix {la}{lb}{A}{B} t = gfix (λ (y : ▸ (A → B)) → t (λ a → y ⊛ next a))
+    This doesn't work here because of a level issue with y.  So I
+    suspect that it flies in Coq due to some typical ambiguity + cumulativity.
+    But the example below is defined in the LICS'13 paper without 
+    any such fanciness!  We've defined pfix using the explicit definitional
+    equality from the paper, so computationally it behaves correctly.
+    But we're still missing something subtle from the paper (or there's
+    a bug in the paper?).
+  -}
   
   pfix-red : ∀ {l}{A B : Set l} (t : ((A → ▸ B) → A → B)) →
                pfix t ≡ t (λ y → next (pfix t y))
@@ -74,4 +84,3 @@ module GuardedRec where
   
   Lam : ℕ → Set Level.zero
   Lam n = pfix (λ X n₁ → F X n₁) n
-
